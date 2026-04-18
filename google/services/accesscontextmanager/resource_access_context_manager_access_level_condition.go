@@ -107,6 +107,21 @@ func ResourceAccessContextManagerAccessLevelCondition() *schema.Resource {
 			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
 
+		Identity: &schema.ResourceIdentity{
+			Version: 1,
+			SchemaFunc: func() map[string]*schema.Schema {
+				return map[string]*schema.Schema{
+					"access_level": {
+						Type:              schema.TypeString,
+						RequiredForImport: true,
+					},
+				}
+			},
+		},
+		ResourceBehavior: schema.ResourceBehavior{
+			MutableIdentity: true,
+		},
+
 		Schema: map[string]*schema.Schema{
 			"access_level": {
 				Type:             schema.TypeString,
@@ -421,6 +436,17 @@ func resourceAccessContextManagerAccessLevelConditionCreate(d *schema.ResourceDa
 
 	log.Printf("[DEBUG] Finished creating AccessLevelCondition %q: %#v", d.Id(), res)
 
+	identity, err := d.Identity()
+	if err == nil && identity != nil {
+		if accessLevelValue, ok := d.GetOk("access_level"); ok && accessLevelValue.(string) != "" {
+			if err = identity.Set("access_level", accessLevelValue.(string)); err != nil {
+				return fmt.Errorf("Error setting access_level: %s", err)
+			}
+		}
+	} else {
+		log.Printf("[DEBUG] (Create) identity not set: %s", err)
+	}
+
 	return resourceAccessContextManagerAccessLevelConditionRead(d, meta)
 }
 
@@ -535,6 +561,18 @@ func resourceAccessContextManagerAccessLevelConditionRead(d *schema.ResourceData
 	}
 	if err := d.Set("vpc_network_sources", flattenNestedAccessContextManagerAccessLevelConditionVpcNetworkSources(res["vpcNetworkSources"], d, config)); err != nil {
 		return fmt.Errorf("Error reading AccessLevelCondition: %s", err)
+	}
+
+	identity, err := d.Identity()
+	if err == nil && identity != nil {
+		if v, ok := identity.GetOk("access_level"); !ok && v == "" {
+			err = identity.Set("access_level", d.Get("access_level").(string))
+			if err != nil {
+				return fmt.Errorf("Error setting access_level: %s", err)
+			}
+		}
+	} else {
+		log.Printf("[DEBUG] (Read) identity not set: %s", err)
 	}
 
 	return nil

@@ -117,6 +117,25 @@ func ResourceStorageBatchOperationsJob() *schema.Resource {
 			tpgresource.DefaultProviderProject,
 		),
 
+		Identity: &schema.ResourceIdentity{
+			Version: 1,
+			SchemaFunc: func() map[string]*schema.Schema {
+				return map[string]*schema.Schema{
+					"job_id": {
+						Type:              schema.TypeString,
+						OptionalForImport: true,
+					},
+					"project": {
+						Type:              schema.TypeString,
+						OptionalForImport: true,
+					},
+				}
+			},
+		},
+		ResourceBehavior: schema.ResourceBehavior{
+			MutableIdentity: true,
+		},
+
 		Schema: map[string]*schema.Schema{
 			"bucket_list": {
 				Type:        schema.TypeList,
@@ -452,6 +471,22 @@ func resourceStorageBatchOperationsJobCreate(d *schema.ResourceData, meta interf
 
 	log.Printf("[DEBUG] Finished creating Job %q: %#v", d.Id(), res)
 
+	identity, err := d.Identity()
+	if err == nil && identity != nil {
+		if jobIdValue, ok := d.GetOk("job_id"); ok && jobIdValue.(string) != "" {
+			if err = identity.Set("job_id", jobIdValue.(string)); err != nil {
+				return fmt.Errorf("Error setting job_id: %s", err)
+			}
+		}
+		if projectValue, ok := d.GetOk("project"); ok && projectValue.(string) != "" {
+			if err = identity.Set("project", projectValue.(string)); err != nil {
+				return fmt.Errorf("Error setting project: %s", err)
+			}
+		}
+	} else {
+		log.Printf("[DEBUG] (Create) identity not set: %s", err)
+	}
+
 	return resourceStorageBatchOperationsJobRead(d, meta)
 }
 
@@ -534,6 +569,24 @@ func resourceStorageBatchOperationsJobRead(d *schema.ResourceData, meta interfac
 	}
 	if err := d.Set("put_object_hold", flattenStorageBatchOperationsJobPutObjectHold(res["putObjectHold"], d, config)); err != nil {
 		return fmt.Errorf("Error reading Job: %s", err)
+	}
+
+	identity, err := d.Identity()
+	if err == nil && identity != nil {
+		if v, ok := identity.GetOk("job_id"); !ok && v == "" {
+			err = identity.Set("job_id", d.Get("job_id").(string))
+			if err != nil {
+				return fmt.Errorf("Error setting job_id: %s", err)
+			}
+		}
+		if v, ok := identity.GetOk("project"); !ok && v == "" {
+			err = identity.Set("project", d.Get("project").(string))
+			if err != nil {
+				return fmt.Errorf("Error setting project: %s", err)
+			}
+		}
+	} else {
+		log.Printf("[DEBUG] (Read) identity not set: %s", err)
 	}
 
 	return nil

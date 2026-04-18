@@ -219,6 +219,21 @@ func ResourceAccessContextManagerServicePerimeterDryRunEgressPolicy() *schema.Re
 			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
 
+		Identity: &schema.ResourceIdentity{
+			Version: 1,
+			SchemaFunc: func() map[string]*schema.Schema {
+				return map[string]*schema.Schema{
+					"perimeter": {
+						Type:              schema.TypeString,
+						RequiredForImport: true,
+					},
+				}
+			},
+		},
+		ResourceBehavior: schema.ResourceBehavior{
+			MutableIdentity: true,
+		},
+
 		Schema: map[string]*schema.Schema{
 			"perimeter": {
 				Type:             schema.TypeString,
@@ -524,6 +539,17 @@ func resourceAccessContextManagerServicePerimeterDryRunEgressPolicyCreate(d *sch
 
 	log.Printf("[DEBUG] Finished creating ServicePerimeterDryRunEgressPolicy %q: %#v", d.Id(), res)
 
+	identity, err := d.Identity()
+	if err == nil && identity != nil {
+		if perimeterValue, ok := d.GetOk("perimeter"); ok && perimeterValue.(string) != "" {
+			if err = identity.Set("perimeter", perimeterValue.(string)); err != nil {
+				return fmt.Errorf("Error setting perimeter: %s", err)
+			}
+		}
+	} else {
+		log.Printf("[DEBUG] (Create) identity not set: %s", err)
+	}
+
 	return resourceAccessContextManagerServicePerimeterDryRunEgressPolicyRead(d, meta)
 }
 
@@ -587,6 +613,18 @@ func resourceAccessContextManagerServicePerimeterDryRunEgressPolicyRead(d *schem
 	}
 	if err := d.Set("etag", flattenNestedAccessContextManagerServicePerimeterDryRunEgressPolicyEtag(res["etag"], d, config)); err != nil {
 		return fmt.Errorf("Error reading ServicePerimeterDryRunEgressPolicy: %s", err)
+	}
+
+	identity, err := d.Identity()
+	if err == nil && identity != nil {
+		if v, ok := identity.GetOk("perimeter"); !ok && v == "" {
+			err = identity.Set("perimeter", d.Get("perimeter").(string))
+			if err != nil {
+				return fmt.Errorf("Error setting perimeter: %s", err)
+			}
+		}
+	} else {
+		log.Printf("[DEBUG] (Read) identity not set: %s", err)
 	}
 
 	return nil

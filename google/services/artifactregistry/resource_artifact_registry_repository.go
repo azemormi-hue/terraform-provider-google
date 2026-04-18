@@ -125,9 +125,22 @@ func durationDiffSuppress(k, oldr, newr string, d *schema.ResourceData) bool {
 }
 
 func mapHashID(v any) int {
-	replaceNestedValue(v, []string{"condition", "older_than"}, expandDuration)
-	replaceNestedValue(v, []string{"condition", "newer_than"}, expandDuration)
-	return schema.HashString(fmt.Sprintf("%v", v))
+	// v's dynamic type can differ between config and state, so we need to marshal and unmarshal to ensure consistent key order.
+	b, err := json.Marshal(v)
+	if err != nil {
+		return schema.HashString(fmt.Sprintf("%v", v))
+	}
+	var c any
+	if err := json.Unmarshal(b, &c); err != nil {
+		return schema.HashString(fmt.Sprintf("%v", v))
+	}
+	m, ok := c.(map[string]any)
+	if !ok {
+		return schema.HashString(fmt.Sprintf("%v", v))
+	}
+	replaceNestedValue(m, []string{"condition", "older_than"}, expandDuration)
+	replaceNestedValue(m, []string{"condition", "newer_than"}, expandDuration)
+	return schema.HashString(fmt.Sprintf("%v", m))
 }
 
 func expandDuration(v any) (any, bool) {
@@ -261,6 +274,29 @@ func ResourceArtifactRegistryRepository() *schema.Resource {
 			tpgresource.SetLabelsDiff,
 			tpgresource.DefaultProviderProject,
 		),
+
+		Identity: &schema.ResourceIdentity{
+			Version: 1,
+			SchemaFunc: func() map[string]*schema.Schema {
+				return map[string]*schema.Schema{
+					"repository_id": {
+						Type:              schema.TypeString,
+						RequiredForImport: true,
+					},
+					"location": {
+						Type:              schema.TypeString,
+						OptionalForImport: true,
+					},
+					"project": {
+						Type:              schema.TypeString,
+						OptionalForImport: true,
+					},
+				}
+			},
+		},
+		ResourceBehavior: schema.ResourceBehavior{
+			MutableIdentity: true,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"format": {
@@ -1031,6 +1067,27 @@ func resourceArtifactRegistryRepositoryCreate(d *schema.ResourceData, meta inter
 
 	log.Printf("[DEBUG] Finished creating Repository %q: %#v", d.Id(), res)
 
+	identity, err := d.Identity()
+	if err == nil && identity != nil {
+		if repositoryIdValue, ok := d.GetOk("repository_id"); ok && repositoryIdValue.(string) != "" {
+			if err = identity.Set("repository_id", repositoryIdValue.(string)); err != nil {
+				return fmt.Errorf("Error setting repository_id: %s", err)
+			}
+		}
+		if locationValue, ok := d.GetOk("location"); ok && locationValue.(string) != "" {
+			if err = identity.Set("location", locationValue.(string)); err != nil {
+				return fmt.Errorf("Error setting location: %s", err)
+			}
+		}
+		if projectValue, ok := d.GetOk("project"); ok && projectValue.(string) != "" {
+			if err = identity.Set("project", projectValue.(string)); err != nil {
+				return fmt.Errorf("Error setting project: %s", err)
+			}
+		}
+	} else {
+		log.Printf("[DEBUG] (Create) identity not set: %s", err)
+	}
+
 	return resourceArtifactRegistryRepositoryRead(d, meta)
 }
 
@@ -1133,6 +1190,30 @@ func resourceArtifactRegistryRepositoryRead(d *schema.ResourceData, meta interfa
 		return fmt.Errorf("Error reading Repository: %s", err)
 	}
 
+	identity, err := d.Identity()
+	if err == nil && identity != nil {
+		if v, ok := identity.GetOk("repository_id"); !ok && v == "" {
+			err = identity.Set("repository_id", d.Get("repository_id").(string))
+			if err != nil {
+				return fmt.Errorf("Error setting repository_id: %s", err)
+			}
+		}
+		if v, ok := identity.GetOk("location"); !ok && v == "" {
+			err = identity.Set("location", d.Get("location").(string))
+			if err != nil {
+				return fmt.Errorf("Error setting location: %s", err)
+			}
+		}
+		if v, ok := identity.GetOk("project"); !ok && v == "" {
+			err = identity.Set("project", d.Get("project").(string))
+			if err != nil {
+				return fmt.Errorf("Error setting project: %s", err)
+			}
+		}
+	} else {
+		log.Printf("[DEBUG] (Read) identity not set: %s", err)
+	}
+
 	return nil
 }
 
@@ -1141,6 +1222,26 @@ func resourceArtifactRegistryRepositoryUpdate(d *schema.ResourceData, meta inter
 	userAgent, err := tpgresource.GenerateUserAgentString(d, config.UserAgent)
 	if err != nil {
 		return err
+	}
+	identity, err := d.Identity()
+	if err == nil && identity != nil {
+		if repositoryIdValue, ok := d.GetOk("repository_id"); ok && repositoryIdValue.(string) != "" {
+			if err = identity.Set("repository_id", repositoryIdValue.(string)); err != nil {
+				return fmt.Errorf("Error setting repository_id: %s", err)
+			}
+		}
+		if locationValue, ok := d.GetOk("location"); ok && locationValue.(string) != "" {
+			if err = identity.Set("location", locationValue.(string)); err != nil {
+				return fmt.Errorf("Error setting location: %s", err)
+			}
+		}
+		if projectValue, ok := d.GetOk("project"); ok && projectValue.(string) != "" {
+			if err = identity.Set("project", projectValue.(string)); err != nil {
+				return fmt.Errorf("Error setting project: %s", err)
+			}
+		}
+	} else {
+		log.Printf("[DEBUG] (Update) identity not set: %s", err)
 	}
 
 	billingProject := ""

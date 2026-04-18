@@ -172,8 +172,53 @@ The following arguments are supported:
 
 * `data_source` -
   (Required)
-  The name of the data source.
-  Supported values: `salesforce`, `jira`, `confluence`, `bigquery`.
+  The identifier for the data source.
+  This is a partial list of supported connectors. Please refer to the
+  [documentation](https://docs.cloud.google.com/gemini/enterprise/docs/connectors/introduction-to-connectors-and-data-stores)
+  for the full list of connectors.
+  Supported first-party connectors include:
+  *   `bigquery`
+  *   `gcp_fhir`
+  *   `google_mail`
+  *   `google_drive`
+  *   `google_calendar`
+  *   `google_chat`
+  Supported third-party connectors include:
+  Generally available (GA) connectors:
+  *   `onedrive`
+  *   `outlook`
+  *   `confluence`
+  *   `jira`
+  *   `servicenow`
+  *   `sharepoint`
+  Preview connectors:
+  *   `asana`
+  *   `azure_active_directory`
+  *   `box`
+  *   `canva`
+  *   `confluence_server`
+  *   `custom_connector`
+  *   `docusign`
+  *   `dropbox`
+  *   `dynamics365`
+  *   `github`
+  *   `gitlab`
+  *   `hubspot`
+  *   `jira_server`
+  *   `linear`
+  *   `native_cloud_identity`
+  *   `notion`
+  *   `okta`
+  *   `pagerduty`
+  *   `peoplesoft`
+  *   `salesforce`
+  *   `shopify`
+  *   `slack`
+  *   `snowflake`
+  *   `teams`
+  *   `trello`
+  *   `workday`
+  *   `zendesk`
 
 * `refresh_interval` -
   (Required)
@@ -465,6 +510,18 @@ DataConnector can be imported using any of these accepted formats:
 * `{{project}}/{{location}}/{{collection_id}}`
 * `{{location}}/{{collection_id}}`
 
+In Terraform v1.12.0 and later, use an [`identity` block](https://developer.hashicorp.com/terraform/language/resources/identities) to import DataConnector using identity values. For example:
+
+```tf
+import {
+  identity = {
+    location = "<-required value->"
+    collectionId = "<-required value->"
+    project = "<-optional value->"
+  }
+  to = google_discovery_engine_data_connector.default
+}
+```
 
 In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import DataConnector using one of the formats above. For example:
 

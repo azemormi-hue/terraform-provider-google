@@ -43,7 +43,6 @@ resource "google_cloud_run_v2_worker_pool" "default" {
   name     = "cloudrun-worker-pool"
   location = "us-central1"
   deletion_protection = false
-  launch_stage = "BETA"
   
   template {
     containers {
@@ -65,7 +64,6 @@ resource "google_cloud_run_v2_worker_pool" "default" {
   name     = "cloudrun-worker-pool"
   location = "us-central1"
   deletion_protection = false
-  launch_stage = "BETA"
   
   template {
     containers {
@@ -102,7 +100,6 @@ resource "google_cloud_run_v2_worker_pool" "default" {
   name     = "cloudrun-worker-pool"
   location = "us-central1"
   deletion_protection = false
-  launch_stage = "BETA"
 
   template {
     containers {
@@ -130,7 +127,6 @@ resource "google_cloud_run_v2_worker_pool" "default" {
   name     = "cloudrun-worker-pool"
   location = "us-central1"
   deletion_protection = false
-  launch_stage = "BETA"
   
   template {
   
@@ -217,7 +213,6 @@ resource "google_cloud_run_v2_worker_pool" "default" {
   name     = "cloudrun-worker-pool"
   location = "us-central1"
   deletion_protection = false
-  launch_stage = "BETA"
 
   template {
     containers {
@@ -246,7 +241,6 @@ resource "google_cloud_run_v2_worker_pool" "default" {
   name     = "cloudrun-worker-pool"
   location = "us-central1"
   deletion_protection = false
-  launch_stage = "BETA"
 
   template {
     containers {
@@ -279,7 +273,6 @@ resource "google_cloud_run_v2_worker_pool" "default" {
   name     = "cloudrun-worker-pool"
   location = "us-central1"
   deletion_protection = false
-  launch_stage = "BETA"
 
   template {
     volumes {
@@ -340,7 +333,6 @@ resource "google_cloud_run_v2_worker_pool" "default" {
   name     = "cloudrun-worker-pool"
   location = "us-central1"
   deletion_protection = false
-  launch_stage = "BETA"
 
   template {
     containers {
@@ -379,7 +371,6 @@ resource "google_cloud_run_v2_worker_pool" "default" {
 
   location     = "us-central1"
   deletion_protection = false
-  launch_stage = "BETA"
 
   template {
     containers {
@@ -420,7 +411,6 @@ resource "google_cloud_run_v2_worker_pool" "default" {
 
   location     = "us-central1"
   deletion_protection = false
-  launch_stage = "BETA"
 
   template {
     containers {
@@ -488,7 +478,6 @@ resource "google_compute_subnetwork" "custom_test" {
 resource "google_cloud_run_v2_worker_pool" "default" {
   name                = "cloudrun-worker-pool"
   location            = "us-central1"
-  launch_stage        = "BETA"
   deletion_protection = false
 
   template {
@@ -1317,6 +1306,18 @@ WorkerPool can be imported using any of these accepted formats:
 * `{{project}}/{{location}}/{{name}}`
 * `{{location}}/{{name}}`
 
+In Terraform v1.12.0 and later, use an [`identity` block](https://developer.hashicorp.com/terraform/language/resources/identities) to import WorkerPool using identity values. For example:
+
+```tf
+import {
+  identity = {
+    name = "<-required value->"
+    location = "<-required value->"
+    project = "<-optional value->"
+  }
+  to = google_cloud_run_v2_worker_pool.default
+}
+```
 
 In Terraform v1.5.0 and later, use an [`import` block](https://developer.hashicorp.com/terraform/language/import) to import WorkerPool using one of the formats above. For example:
 
